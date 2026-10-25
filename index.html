@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#070b10">
+  <meta name="description" content="Iron Eclipse — a neon-industrial tank campaign with three sectors, field upgrades, and a three-phase titan boss.">
+  <title>IRON ECLIPSE // Tank Campaign</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="site-backdrop" aria-hidden="true">
+    <div class="site-glow site-glow-a"></div>
+    <div class="site-glow site-glow-b"></div>
+    <div class="site-grid"></div>
+  </div>
+
+  <main id="game-shell" class="game-shell">
+    <div id="game-stage" class="game-stage">
+      <canvas id="game-canvas" aria-label="Iron Eclipse game arena"></canvas>
+
+      <div class="stage-vignette" aria-hidden="true"></div>
+      <div class="scanlines" aria-hidden="true"></div>
+      <div class="grain" aria-hidden="true"></div>
+      <div id="damage-flash" class="damage-flash" aria-hidden="true"></div>
+
+      <div id="crosshair" class="crosshair" aria-hidden="true">
+        <span class="crosshair-ring"></span>
+        <span class="crosshair-tick tick-n"></span>
+        <span class="crosshair-tick tick-e"></span>
+        <span class="crosshair-tick tick-s"></span>
+        <span class="crosshair-tick tick-w"></span>
+        <span class="crosshair-dot"></span>
+      </div>
+
+      <!-- ================= IN-GAME HUD ================= -->
+      <section id="hud" class="hud hidden" aria-label="Combat HUD">
+        <div class="hud-top">
+          <div class="hud-panel pilot-panel">
+            <div class="panel-heading">
+              <span class="unit-mark">V-07</span>
+              <div>
+                <span class="micro-label">PROTOTYPE SIEGE UNIT</span>
+                <strong>VANGUARD-07</strong>
+              </div>
+              <span class="online-dot" title="Systems online"></span>
+            </div>
+            <div class="bar-row hull-row">
+              <span class="bar-label">HULL</span>
+              <div class="meter"><i id="hull-fill" class="meter-fill hull-fill"></i></div>
+              <b id="hull-text">100</b>
+            </div>
+            <div class="bar-row shield-row">
+              <span class="bar-label">SHIELD</span>
+              <div class="meter"><i id="shield-fill" class="meter-fill shield-fill"></i></div>
+              <b id="shield-text">55</b>
+            </div>
+          </div>
+
+          <div class="mission-panel">
+            <span id="hud-sector" class="micro-label">SECTOR 01 // DUST DIVIDE</span>
+            <div class="mission-line">
+              <strong id="hud-wave">WAVE 01 / 03</strong>
+              <div id="wave-pips" class="wave-pips" aria-hidden="true"></div>
+            </div>
+            <span id="hud-objective" class="mission-objective">Break the outpost perimeter.</span>
+          </div>
+
+          <div class="hud-top-right">
+            <div class="score-panel">
+              <div><span class="micro-label">SCORE</span><strong id="hud-score">000000</strong></div>
+              <div><span class="micro-label">KILLS</span><strong id="hud-kills">00</strong></div>
+            </div>
+            <div class="hud-actions">
+              <button id="btn-mute" class="hud-icon-btn sound-btn" type="button" aria-label="Mute audio" title="Mute audio (M)">
+                <span class="sound-icon" aria-hidden="true"><i></i><i></i><i></i></span>
+              </button>
+              <button id="btn-pause" class="hud-icon-btn pause-btn" type="button" aria-label="Pause game" title="Pause (Esc)">
+                <span aria-hidden="true"></span><span aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud-bottom">
+          <div class="hud-panel systems-panel">
+            <div class="system-row">
+              <span class="micro-label">CANNON</span>
+              <div class="thin-meter"><i id="reload-fill" class="thin-fill reload-fill"></i></div>
+              <span id="reload-text" class="system-value">READY</span>
+            </div>
+            <div class="system-row">
+              <span class="micro-label">PHASE DRIVE</span>
+              <div class="thin-meter"><i id="dash-fill" class="thin-fill dash-fill"></i></div>
+              <span id="dash-text" class="system-value">READY</span>
+            </div>
+            <div id="buff-status" class="buff-status hidden">
+              <span class="buff-dot"></span>
+              <span id="buff-text">OVERDRIVE</span>
+            </div>
+          </div>
+
+          <div class="combat-tip">
+            <span><kbd>WASD</kbd> DRIVE</span>
+            <span><kbd>MOUSE</kbd> AIM</span>
+            <span><kbd>LMB</kbd> FIRE</span>
+            <span><kbd>SPACE</kbd> DASH</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= BOSS HUD ================= -->
+      <section id="boss-hud" class="boss-hud hidden" aria-label="Boss status">
+        <div class="boss-topline">
+          <span class="boss-class">TITAN-CLASS SIEGE PLATFORM</span>
+          <span id="boss-phase" class="boss-phase">PHASE I // BASTION</span>
+        </div>
+        <div class="boss-name-line">
+          <h2>THE SOVEREIGN</h2>
+          <span id="boss-status" class="boss-status">CORE STABLE</span>
+        </div>
+        <div class="boss-bar">
+          <i id="boss-fill" class="boss-fill"></i>
+          <span class="boss-mark mark-two" style="left: 66%"></span>
+          <span class="boss-mark mark-three" style="left: 33%"></span>
+        </div>
+      </section>
+
+      <!-- ================= TRANSIENT FEEDBACK ================= -->
+      <div id="announcement" class="announcement" aria-live="polite">
+        <span id="announcement-kicker" class="announcement-kicker">SYSTEM</span>
+        <h2 id="announcement-title">WAVE INBOUND</h2>
+        <p id="announcement-sub">Hold the line.</p>
+      </div>
+      <div id="toast" class="toast" aria-live="polite"></div>
+
+      <!-- ================= BOSS INTRO ================= -->
+      <div id="boss-intro" class="boss-intro" aria-hidden="true">
+        <div class="boss-intro-bar top"></div>
+        <div class="boss-intro-bar bottom"></div>
+        <div class="boss-intro-content">
+          <span class="intro-kicker">TITAN SIGNATURE DETECTED</span>
+          <div class="intro-sigil" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <h2>THE SOVEREIGN</h2>
+          <p>TITAN-CLASS SIEGE PLATFORM</p>
+          <span class="intro-warning">THREAT LEVEL // APOCALYPSE</span>
+        </div>
+      </div>
+
+      <!-- ================= TITLE SCREEN ================= -->
+      <section id="screen-menu" class="screen screen-menu">
+        <div class="menu-topline">
+          <span>VANGUARD COMMAND // DEEP STRIKE DIVISION</span>
+          <span class="status"><i></i> UPLINK STABLE</span>
+        </div>
+
+        <div class="menu-main">
+          <div class="menu-copy">
+            <div class="eyebrow"><span class="eyebrow-line"></span> PROTOTYPE SIEGE UNIT // 07</div>
+            <h1 class="logo" aria-label="Iron Eclipse">
+              <span class="logo-iron">IRON</span>
+              <span class="logo-eclipse">ECLIPSE</span>
+            </h1>
+            <p class="tagline">One prototype. Three dead sectors.<br><strong>One last titan.</strong></p>
+
+            <div class="menu-actions">
+              <button id="btn-start" class="btn btn-primary" type="button">
+                <span>Begin campaign</span>
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M11 5l5 5-5 5"/></svg>
+              </button>
+              <button id="btn-menu-mute" class="btn btn-ghost sound-toggle" type="button">
+                <span class="sound-icon" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span id="menu-mute-label">Audio enabled</span>
+              </button>
+            </div>
+
+            <div class="menu-controls" aria-label="Controls">
+              <div class="control-item"><kbd>WASD</kbd><span>Drive</span></div>
+              <div class="control-item"><kbd>MOUSE</kbd><span>Aim</span></div>
+              <div class="control-item"><kbd>LMB</kbd><span>Fire</span></div>
+              <div class="control-item"><kbd>SPACE</kbd><span>Dash</span></div>
+            </div>
+          </div>
+
+          <div class="menu-visual" aria-hidden="true">
+            <div class="radar">
+              <div class="radar-ring ring-1"></div>
+              <div class="radar-ring ring-2"></div>
+              <div class="radar-ring ring-3"></div>
+              <div class="radar-axis axis-x"></div>
+              <div class="radar-axis axis-y"></div>
+              <div class="radar-sweep"></div>
+              <span class="radar-blip blip-a"></span>
+              <span class="radar-blip blip-b"></span>
+              <span class="radar-blip blip-c"></span>
+            </div>
+
+            <svg class="tank-blueprint" viewBox="0 0 560 340" fill="none">
+              <defs>
+                <linearGradient id="hullGradient" x1="140" y1="130" x2="420" y2="270" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#87f0ff" stop-opacity=".3"/>
+                  <stop offset="1" stop-color="#5be2ff" stop-opacity=".03"/>
+                </linearGradient>
+                <linearGradient id="accentGradient" x1="160" y1="0" x2="470" y2="0" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#ffb35c"/>
+                  <stop offset="1" stop-color="#ff6c55"/>
+                </linearGradient>
+                <filter id="blueGlow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="5" result="blur"/>
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              <g class="blueprint-rings" stroke="#6ce8ff" stroke-opacity=".13">
+                <circle cx="282" cy="175" r="145"/>
+                <circle cx="282" cy="175" r="112" stroke-dasharray="2 10"/>
+                <circle cx="282" cy="175" r="75" stroke-dasharray="30 9"/>
+              </g>
+              <g class="tank-lines">
+                <rect x="112" y="190" width="326" height="35" rx="17" fill="#10222b" stroke="#5de7ff" stroke-opacity=".55"/>
+                <rect x="112" y="229" width="326" height="35" rx="17" fill="#10222b" stroke="#5de7ff" stroke-opacity=".55"/>
+                <path d="M160 187 L185 128 L375 128 L401 187 L388 269 L173 269 Z" fill="url(#hullGradient)" stroke="#8cf0ff" stroke-opacity=".8"/>
+                <path d="M180 176 L210 143 L350 143 L380 176" stroke="#5be2ff" stroke-opacity=".35"/>
+                <path d="M196 251 L218 223 L344 223 L367 251" stroke="#5be2ff" stroke-opacity=".24"/>
+                <rect x="196" y="135" width="14" height="128" rx="7" fill="#0a161c" stroke="#5de7ff" stroke-opacity=".28"/>
+                <rect x="351" y="135" width="14" height="128" rx="7" fill="#0a161c" stroke="#5de7ff" stroke-opacity=".28"/>
+                <circle cx="282" cy="192" r="54" fill="#0a1b22" stroke="#7beaff" stroke-opacity=".9"/>
+                <circle cx="282" cy="192" r="33" fill="#0c2630" stroke="#5de7ff" stroke-opacity=".55"/>
+                <path d="M282 168 V216 M258 192 H306" stroke="#5de7ff" stroke-opacity=".25"/>
+                <rect x="327" y="183" width="174" height="18" rx="4" fill="#11252c" stroke="#8cf0ff" stroke-opacity=".8"/>
+                <rect x="478" y="177" width="28" height="30" rx="3" fill="#0d1e24" stroke="url(#accentGradient)"/>
+                <path d="M204 181 H242 M322 181 H359" stroke="url(#accentGradient)" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="282" cy="192" r="10" fill="#ffb35c" fill-opacity=".18" stroke="#ffb35c"/>
+                <circle cx="282" cy="192" r="3" fill="#ffce8c" filter="url(#blueGlow)"/>
+                <g stroke="#ffb35c" stroke-opacity=".7">
+                  <path d="M171 307 H218"/>
+                  <path d="M171 307 V295"/>
+                  <path d="M455 115 H505"/>
+                  <path d="M455 115 V127"/>
+                </g>
+                <g fill="#ffca8c" fill-opacity=".75" font-family="monospace" font-size="10" letter-spacing="1.5">
+                  <text x="120" y="322">V-07 // VANGUARD</text>
+                  <text x="456" y="107">RAIL CANNON</text>
+                </g>
+                <g stroke="#5de7ff" stroke-opacity=".22">
+                  <path d="M125 135 H230" stroke-dasharray="4 8"/>
+                  <path d="M125 135 V90" stroke-dasharray="4 8"/>
+                </g>
+                <g fill="#86efff" fill-opacity=".6" font-family="monospace" font-size="9" letter-spacing="1.3">
+                  <text x="67" y="82">REACTIVE PLATING</text>
+                  <text x="67" y="94">STATUS // NOMINAL</text>
+                </g>
+              </g>
+            </svg>
+
+            <div class="campaign-route">
+              <div class="route-line"></div>
+              <div class="route-node active"><span>01</span><small>DUST</small></div>
+              <div class="route-node"><span>02</span><small>CRYO</small></div>
+              <div class="route-node"><span>03</span><small>ASH</small></div>
+              <div class="route-node boss"><span>04</span><small>FINAL</small></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-footer">
+          <span id="menu-best">NO COMBAT RECORD</span>
+          <span class="footer-mid">LAST PROTOTYPE // LAST CHANCE</span>
+          <span>BUILD 1.0 // OFFLINE</span>
+        </div>
+      </section>
+
+      <!-- ================= MISSION BRIEFING ================= -->
+      <section id="screen-briefing" class="screen hidden">
+        <div class="briefing-card">
+          <div class="briefing-top">
+            <div>
+              <span id="briefing-sector" class="eyebrow"><span class="eyebrow-line"></span> SECTOR 01</span>
+              <h2 id="briefing-title">DUST DIVIDE</h2>
+              <p id="briefing-subtitle">CANYON OUTPOST 7A</p>
+            </div>
+            <div class="briefing-stamp">
+              <span>MISSION</span>
+              <strong>ORDER</strong>
+              <small>V-07</small>
+            </div>
+          </div>
+
+          <div class="briefing-rule"></div>
+
+          <div class="briefing-grid">
+            <div class="briefing-cell">
+              <span class="micro-label">OBJECTIVE</span>
+              <p id="briefing-objective">Break the outpost perimeter.</p>
+            </div>
+            <div class="briefing-cell">
+              <span class="micro-label">THREAT PROFILE</span>
+              <p id="briefing-threat">Scout armor / sentry batteries</p>
+            </div>
+            <div class="briefing-cell">
+              <span class="micro-label">ENVIRONMENT</span>
+              <p id="briefing-hazard">Sandstorm fronts</p>
+            </div>
+          </div>
+
+          <p id="briefing-intel" class="briefing-intel"></p>
+
+          <div class="briefing-hint">
+            <span class="hint-mark">!</span>
+            <div>
+              <span class="micro-label">COMMAND TIP</span>
+              <p id="briefing-hint"></p>
+            </div>
+          </div>
+
+          <div class="briefing-footer">
+            <div class="briefing-route" aria-label="Campaign progress">
+              <span class="mini-node" data-sector="1">01</span>
+              <span class="mini-line"></span>
+              <span class="mini-node" data-sector="2">02</span>
+              <span class="mini-line"></span>
+              <span class="mini-node" data-sector="3">03</span>
+              <span class="mini-line"></span>
+              <span class="mini-node boss" data-sector="4">04</span>
+            </div>
+            <button id="btn-deploy" class="btn btn-primary" type="button">
+              <span>Deploy unit</span>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M11 5l5 5-5 5"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= UPGRADE SCREEN ================= -->
+      <section id="screen-upgrade" class="screen hidden">
+        <div class="upgrade-wrap">
+          <div class="upgrade-heading">
+            <span class="eyebrow"><span class="eyebrow-line"></span> SECTOR CLEARED // FIELD REFIT AUTHORIZED</span>
+            <h2>CHOOSE ONE UPGRADE</h2>
+            <p>Command can reroute one modification before the next deployment.</p>
+          </div>
+          <div id="upgrade-cards" class="upgrade-cards"></div>
+        </div>
+      </section>
+
+      <!-- ================= PAUSE ================= -->
+      <section id="screen-pause" class="screen hidden">
+        <div class="modal-card">
+          <span class="eyebrow"><span class="eyebrow-line"></span> SIMULATION SUSPENDED</span>
+          <h2>PAUSED</h2>
+          <p class="modal-copy">The battlefield is holding its breath.</p>
+          <div class="pause-controls">
+            <div><kbd>WASD</kbd><span>Drive</span></div>
+            <div><kbd>MOUSE</kbd><span>Aim</span></div>
+            <div><kbd>LMB</kbd><span>Fire</span></div>
+            <div><kbd>SPACE</kbd><span>Phase dash</span></div>
+            <div><kbd>M</kbd><span>Mute audio</span></div>
+            <div><kbd>ESC</kbd><span>Resume</span></div>
+          </div>
+          <div class="modal-actions">
+            <button id="btn-resume" class="btn btn-primary" type="button">Resume</button>
+            <button id="btn-restart-level" class="btn btn-ghost" type="button">Restart sector</button>
+            <button id="btn-quit" class="btn btn-danger-ghost" type="button">Abandon campaign</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= GAME OVER ================= -->
+      <section id="screen-gameover" class="screen hidden">
+        <div class="modal-card end-card">
+          <span class="eyebrow danger-text"><span class="eyebrow-line"></span> SIGNAL LOST</span>
+          <h2>HULL BREACH</h2>
+          <p class="modal-copy">Vanguard-07 is down. The sector remains hostile.</p>
+          <div class="end-stats">
+            <div><span>SCORE</span><strong id="gameover-score">000000</strong></div>
+            <div><span>KILLS</span><strong id="gameover-kills">00</strong></div>
+            <div><span>ACCURACY</span><strong id="gameover-accuracy">0%</strong></div>
+            <div><span>TIME</span><strong id="gameover-time">00:00</strong></div>
+          </div>
+          <div class="modal-actions">
+            <button id="btn-retry" class="btn btn-primary" type="button">Redeploy</button>
+            <button id="btn-gameover-quit" class="btn btn-ghost" type="button">Return to title</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= VICTORY ================= -->
+      <section id="screen-victory" class="screen screen-victory hidden">
+        <div class="modal-card victory-card">
+          <span class="eyebrow victory-text"><span class="eyebrow-line"></span> TITAN SIGNAL TERMINATED</span>
+          <h2>THE SOVEREIGN<br><em>FALLS</em></h2>
+          <p class="modal-copy">The last siege platform is scrap. For the first time in nine years, the horizon is quiet.</p>
+          <div class="end-stats">
+            <div><span>FINAL SCORE</span><strong id="victory-score">000000</strong></div>
+            <div><span>KILLS</span><strong id="victory-kills">00</strong></div>
+            <div><span>ACCURACY</span><strong id="victory-accuracy">0%</strong></div>
+            <div><span>CAMPAIGN TIME</span><strong id="victory-time">00:00</strong></div>
+          </div>
+          <div id="victory-upgrades" class="victory-upgrades"></div>
+          <div class="modal-actions">
+            <button id="btn-new-campaign" class="btn btn-primary" type="button">New campaign</button>
+            <button id="btn-victory-quit" class="btn btn-ghost" type="button">Return to title</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <noscript>This game requires JavaScript.</noscript>
+  <script src="js/config.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
